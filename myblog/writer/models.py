@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.db import models
 from . import models as this_models
 
@@ -8,7 +9,7 @@ class User(models.Model):
     name = models.CharField(max_length=40)
     is_active = models.BooleanField(default=True)
     competence = models.IntegerField(default=2)
-    last_login = models.DateTimeField(auto_now_add=True)
+    last_login = models.DateTimeField(default=timezone.now())
     join_date = models.DateTimeField(auto_now_add=True)
 
 class Classification(models.Model):
