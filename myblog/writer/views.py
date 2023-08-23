@@ -12,7 +12,7 @@ from rest_framework.response import Response
 # 自定义分页器
 def get_pagination():
     pagination = PageNumberPagination()
-    pagination.page_size=2
+    pagination.page_size=20
     pagination.page_query_param = 'page'
     pagination.page_size_query_param = 'size'
     pagination.max_page_size=100
@@ -60,8 +60,9 @@ class UserAccoutView(APIView):
     # 用户登录
     def post(self, request, format=None):
         user = get_user_by_username(request.data.get('username'))
-        serializer = UserSerializer(instance=user)
         if user.password == request.data.get('password'):
+            request.session['username'] = request.data.get('username')
+            request.session.set_expiry(0)
             return Response(data={'message': 'Login success'}, status=status.HTTP_200_OK)
         return Response(data={'message': 'Login fail, password is wrong'}, status=status.HTTP_401_UNAUTHORIZED)
         
@@ -83,7 +84,7 @@ class ArticleView(APIView):
 class ClassificationView(APIView):
     # 获取所有分类
     def get(self, request, format=None):
-        return
+        return Response(data={'message': 'Get class fail'}, status=status.HTTP_401_UNAUTHORIZED)
     # 创建分类
     def post(self, request, format=None):
         return
@@ -107,3 +108,24 @@ class TagView(APIView):
     # 禁用、启用Tag
     def delete(self, request, format=None):
         return
+    
+# ToDo items:
+# 1. User Login
+#   * 1. Login check
+#   - 2. Request middleware
+#   - 3. CORS 
+# 2. Article view
+#   - 1. Select
+#   - 2. Create
+#   - 3. Update
+#   - 4. Delete
+# 3. Classifications view
+#   - 1. Select
+#   - 2. Create
+#   - 3. Update
+#   - 4. Delete
+# 4. Tag view
+#   - 1. Select
+#   - 2. Create
+#   - 3. Update
+#   - 4. Delete
