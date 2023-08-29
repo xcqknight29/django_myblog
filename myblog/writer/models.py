@@ -9,7 +9,7 @@ class User(models.Model):
     name = models.CharField(max_length=40)
     is_active = models.BooleanField(default=True)
     competence = models.IntegerField(default=2)
-    last_login = models.DateTimeField(default=timezone.now())
+    last_login = models.DateTimeField(default=timezone.now)
     join_date = models.DateTimeField(auto_now_add=True)
 
 class Classification(models.Model):
@@ -26,5 +26,7 @@ class Article(models.Model):
     content = models.TextField()
     author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     classification = models.ForeignKey(Classification, null=True, on_delete=models.SET_NULL)
-    tag = models.ManyToManyField(to=Tag)
+    tag = models.ManyToManyField(to=Tag, null=True)
+    create_time = models.DateTimeField(auto_now_add=True)
+    last_update = models.DateTimeField(default=timezone.now)
     
