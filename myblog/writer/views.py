@@ -1,6 +1,8 @@
 import json
 from django.utils import timezone
 from django.http import Http404
+from django.http import Http404
+from django.shortcuts import render
 from .models import User, Article, Classification, Tag
 from .serializers import UserSerializer, ArticleSerializer, ClassificationSerializer, TagSerializer
 from rest_framework import status
