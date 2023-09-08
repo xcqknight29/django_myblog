@@ -4,7 +4,7 @@ from django.http import Http404
 from django.http import Http404
 from django.shortcuts import render
 from .models import User, Article, Classification, Tag
-from .serializers import UserSerializer, ArticleSerializer, ClassificationSerializer, TagSerializer
+from .serializers import UserSerializer, ArticleSerializer, ArticleExcludeContentSerializer, ClassificationSerializer, TagSerializer
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
@@ -81,7 +81,7 @@ class ArticleView(APIView):
         articleList = Article.objects.all()
         pagination = get_pagination()
         result_set = pagination.paginate_queryset(queryset=articleList, request=request)
-        serializer = ArticleSerializer(instance=result_set, many=True)
+        serializer = ArticleExcludeContentSerializer(instance=result_set, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
     # 创建文章
     def post(self, request, format=None):
@@ -134,15 +134,16 @@ class ClassificationView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
     # 创建分类
     def post(self, request, format=None):
-        serializer = ArticleSerializer(data=request.data)
+        print(request.data)
+        serializer = ClassificationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
     # 修改分类
     def put(self, request, format=None):
-        article = get_article_by_title(request.data.get('title'))
-        serializer = ArticleSerializer(instance=article, data=request.data)
+        classification = Classification.objects.get(id=request.data.get('id'))
+        serializer = ClassificationSerializer(instance=classification, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_200_OK)
