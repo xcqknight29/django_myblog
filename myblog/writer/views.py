@@ -1,7 +1,6 @@
 import json
 from django.utils import timezone
 from django.http import Http404
-from django.http import Http404
 from django.shortcuts import render
 from .models import User, Article, Classification, Tag
 from .serializers import UserSerializer, ArticleSerializer, ArticleExcludeContentSerializer, ClassificationSerializer, TagSerializer
@@ -76,7 +75,7 @@ class UserAccoutView(APIView):
         return Response(status=status.HTTP_401_UNAUTHORIZED)
         
 class ArticleView(APIView):
-    # 通过分页器获取文章
+    # 通过分页器获取文章（不带文章内容）
     def get(self, request, format=None):
         articleList = Article.objects.all()
         pagination = get_pagination()
@@ -117,6 +116,7 @@ class ArticleView(APIView):
         article.save()
         return Response(status=status.HTTP_200_OK)
     
+# 返回带文章内容的一篇文章
 class ArticleEditView(APIView):
     def get(self, request, format=None):
         try:
@@ -125,6 +125,8 @@ class ArticleEditView(APIView):
             Http404
         serializer = ArticleSerializer(instance=article)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
         
 class ClassificationView(APIView):
     # 获取所有分类

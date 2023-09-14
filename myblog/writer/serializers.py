@@ -8,10 +8,14 @@ class UserSerializer(serializers.ModelSerializer):
     join_date = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
     class Meta:
         model = User
-        fields = '__all__'
+        exclude = ['password']
         read_only_fields = ('id', 'join_date')
 
 class ArticleSerializer(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    last_update = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', default=timezone.now())
+    author_name = serializers.ReadOnlyField(source='author.name')
+    classification_name = serializers.ReadOnlyField(source='classification.classification_name')
     class Meta:
         model = Article
         fields = '__all__'
@@ -24,7 +28,7 @@ class ArticleExcludeContentSerializer(serializers.ModelSerializer):
     classification_name = serializers.ReadOnlyField(source='classification.classification_name')
     class Meta:
         model = Article
-        exclude = ['content', 'tag']
+        exclude = ['content']
         read_only_fields = ('id',)
 
 class ClassificationSerializer(serializers.ModelSerializer):
