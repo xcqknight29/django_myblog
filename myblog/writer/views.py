@@ -77,7 +77,10 @@ class UserAccoutView(APIView):
 class ArticleView(APIView):
     # 通过分页器获取文章（不带文章内容）
     def get(self, request, format=None):
-        articleList = Article.objects.all()
+        if(request.query_params.get('inputContent')):
+            articleList = Article.objects.filter(title__icontains=request.query_params.get('inputContent'))
+        else:
+            articleList = Article.objects.all()
         pagination = get_pagination()
         result_set = pagination.paginate_queryset(queryset=articleList, request=request)
         serializer = ArticleExcludeContentSerializer(instance=result_set, many=True)
@@ -126,8 +129,6 @@ class ArticleEditView(APIView):
         serializer = ArticleSerializer(instance=article)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-
-        
 class ClassificationView(APIView):
     # 获取所有分类
     def get(self, request, format=None):
@@ -187,15 +188,3 @@ class TagView(APIView):
         article.save()
         return Response(status=status.HTTP_200_OK)
     
-# ToDo items:
-# check 1. User Login
-#   check 1. Login check
-#   check 2. Request middleware
-# check 2. CORS 
-# 3. Article
-#   - 1. Article view
-#       - 1. create article
-#       - 2. 
-#   - 2. Article page
-# 4. User view
-# 5. User page
