@@ -5,7 +5,6 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("writer", "0002_article_create_time_alter_user_last_login"),
     ]

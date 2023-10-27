@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.db import models
 from . import models as this_models
 
+
 class User(models.Model):
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=20, unique=True)
@@ -12,13 +13,19 @@ class User(models.Model):
     last_login = models.DateTimeField(default=timezone.now)
     join_date = models.DateTimeField(auto_now_add=True)
 
+    # def __str__(self):
+    #     return f"id: {self.id}, username: {self.username}, password: {self.password}, name: {self.name}, is_active: {self.is_active}, competence: {self.competence}, last_login: {self.last_login}, join_date: {self.join_date}"
+
+
 class Classification(models.Model):
     id = models.AutoField(primary_key=True)
-    classification_name = models.CharField(max_length=20)
-    
+    classification_name = models.CharField(max_length=20, unique=True)
+
+
 class Tag(models.Model):
     id = models.AutoField(primary_key=True)
-    tag_name = models.CharField(max_length=20)
+    tag_name = models.CharField(max_length=20, unique=True)
+
 
 class Article(models.Model):
     id = models.AutoField(primary_key=True)
@@ -29,4 +36,3 @@ class Article(models.Model):
     tag = models.ManyToManyField(to=Tag, null=True)
     create_time = models.DateTimeField(auto_now_add=True)
     last_update = models.DateTimeField(default=timezone.now)
-    
