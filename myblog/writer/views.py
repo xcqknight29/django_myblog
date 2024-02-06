@@ -5,7 +5,6 @@ from django.utils import timezone
 from django.http import Http404
 from django.shortcuts import render
 from rest_framework.decorators import api_view
-
 from .models import User, Article, Classification, Tag
 from .serializers import UserSerializer, ArticleSerializer, ArticleExcludeContentSerializer, ClassificationSerializer, \
     TagSerializer
@@ -109,12 +108,12 @@ class UserAccoutView(APIView):
 class ArticleView(APIView):
     # 通过分页器获取文章（不带文章内容）
     def get(self, request):
-        if (request.query_params.get('inputContent')):
-            articleList = Article.objects.filter(title__icontains=request.query_params.get('inputContent'))
+        if request.query_params.get('inputContent'):
+            article_list = Article.objects.filter(title__icontains=request.query_params.get('inputContent'))
         else:
-            articleList = Article.objects.all()
+            article_list = Article.objects.all()
         pagination = MyPagination()
-        result_set = pagination.paginate_queryset(queryset=articleList, request=request)
+        result_set = pagination.paginate_queryset(queryset=article_list, request=request)
         serializer = ArticleExcludeContentSerializer(instance=result_set.get('data'), many=True)
         result_set['data'] = serializer.data
         return Response(data=result_set, status=status.HTTP_200_OK)
@@ -200,9 +199,10 @@ class ClassificationView(APIView):
 
     # 禁用、启用分类
     def delete(self, request):
-        article = get_article_by_title(request.data.get('title'))
-        article.is_active = not article.is_active
-        article.save()
+        class_name = request.data.get('className')
+        _class = Classification.objects.get(classification_name=class_name)
+        _class.is_active = not _class.is_active
+        _class.save()
         return Response(status=status.HTTP_200_OK)
 
 

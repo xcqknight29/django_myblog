@@ -1,9 +1,6 @@
 # writer/middleware.py
 
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-from django.shortcuts import redirect
-from rest_framework import status
-from rest_framework.response import Response
+from django.http import HttpResponse
 
 
 # 获取当前用户的权限
@@ -12,7 +9,7 @@ def get_competence(request):
     return user.competence
 
 
-# 登录验证中间件
+# 跳转到登录验证中间件
 class LoginMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -69,8 +66,10 @@ class CorsMiddleware:
         # before
         response = self.get_response(request)
         # after
-        response.headers = {'Access-Control-Allow-Origin': 'http://localhost:5173',
-                            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-                            'Access-Control-Allow-Headers': 'content-type',
-                            'Access-Control-Allow-Credentials': 'true', }
+        response.headers = {
+            'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'content-type',
+            'Access-Control-Allow-Credentials': 'true',
+        }
         return response

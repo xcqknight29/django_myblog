@@ -20,6 +20,7 @@ class User(models.Model):
 class Classification(models.Model):
     id = models.AutoField(primary_key=True)
     classification_name = models.CharField(max_length=20, unique=True)
+    is_active = models.BooleanField(default=True)
 
 
 class Tag(models.Model):
