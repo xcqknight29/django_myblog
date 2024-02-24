@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class ReaderConfig(AppConfig):
+class WebblogConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "reader"
+    name = "webblog"

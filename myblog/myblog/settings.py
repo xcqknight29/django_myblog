@@ -39,11 +39,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "writer",
+    "webblog",
 ]
 
 MIDDLEWARE = [
-    "writer.middlewares.CorsMiddleware",
+    "webblog.middlewares.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -51,7 +51,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "writer.middlewares.LoginMiddleware",
+    "webblog.middlewares.LoginMiddleware",
 ]
 
 
