@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 from rest_framework.response import Response
 from .models import User, Article, Classification, Tag
 from .serializers import UserSerializer, ArticleSerializer, ArticleExcludeContentSerializer, \
@@ -29,13 +30,14 @@ class MyPagination:
 
 
 # 通过username查找用户
-def get_user_by_username(username):
+def get_user_by_username(username: str):
     try:
         return User.objects.get(username=username)
     except:
         raise Http404
 
 
+# 通过title查找文章
 def get_article_by_title(title):
     try:
         return Article.objects.get(title=title)
@@ -43,14 +45,16 @@ def get_article_by_title(title):
         raise Http404
 
 
-def get_competence(request):
-    user = request.session.get('user')
-    return user.competence
+# 通过name查找Tag
+def get_tag_by_name(tag_name):
+    try:
+        return Tag.objects.get(tag_name=tag_name)
+    except:
+        raise Http404
 
 
 # 使用类视图处理请求
 class UserView(APIView):
-    
     # 通过分页器获取用户
     def get(self, request):
         # user_list = User.objects.filter(is_active=True)
@@ -93,8 +97,37 @@ class UserView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
+# 用户登录
+@api_view(['post'])
+def user_login_view(request):
+    if request.method == 'POST':
+        user = get_user_by_username(request.data.get('username'))
+        if user.password == request.data.get('password'):
+            user.last_login = timezone.now()
+            user.save()
+            request.session['user'] = request.data
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+# 返回一个用户的信息
+@api_view(['get'])
+def user_message_view(request):
+    user = get_user_by_username(request.query_params['username'])
+    serializer = UserSerializer(instance=user)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+# 获取session中存储的user的信息，即已登录用户自身的信息
+@api_view(['get'])
+def user_self_view(request):
+    user = request.session.get('user')
+    user_data = get_user_by_username(user.get('username'))
+    serializer = UserSerializer(instance=user_data)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
 class ArticleView(APIView):
-    
     # 通过分页器获取文章（不带文章内容）
     def get(self, request):
         if request.query_params.get('inputContent'):
@@ -137,15 +170,52 @@ class ArticleView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     # 根据id禁用启用文章
-    def delete(self, request):
-        article = get_article_by_title(request.data.get('title'))
-        article.is_active = not article.is_active
-        article.save()
-        return Response(status=status.HTTP_200_OK)
+    # def delete(self, request):
+    #     article = get_article_by_title(request.data.get('title'))
+    #     article.is_active = not article.is_active
+    #     article.save()
+    #     return Response(status=status.HTTP_200_OK)
 
 
-class ClassificationView(APIView):
-    
+# 返回特定用户创作的文章（不带文章内容）
+@api_view(['get'])
+def article_author_view(request):
+    user = get_user_by_username(request.query_params['username'])
+    article_list = Article.objects.filter(author=user.id)
+    pagination = MyPagination()
+    result_set = pagination.paginate_queryset(queryset=article_list, request=request)
+    serializer = ArticleExcludeContentSerializer(instance=result_set['data'], many=True)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+# 返回带文章内容的一篇文章
+@api_view(['get'])
+def article_edit_view(request):
+    try:
+        article = Article.objects.get(id=int(request.query_params['articleId']))
+    except:
+        Http404
+    serializer = ArticleSerializer(instance=article)
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+# 返回特定分类下的文章（不带文章内容）
+@api_view(['get'])
+def article_class_view(request):
+    try:
+        classification = Classification.objects.get(
+            classification_name=request.query_params['className'])
+    except:
+        Http404
+    article_list = Article.objects.filter(classification=classification.id)
+    pagination = MyPagination()
+    result_set = pagination.paginate_queryset(queryset=article_list, request=request)
+    serializer = ArticleExcludeContentSerializer(instance=result_set['data'], many=True)
+    result_set['data'] = serializer.data
+    return Response(data=result_set, status=status.HTTP_200_OK)
+
+
+class ClassView(APIView):
     # 获取所有分类
     def get(self, request):
         class_list = Classification.objects.all().order_by('-id')
@@ -158,7 +228,9 @@ class ClassificationView(APIView):
     # 创建分类
     def post(self, request):
         print(request.data)
-        serializer = ClassificationSerializer(data=request.data)
+        class_data = Classification(classification_name=request.data.get('className'))
+        print(class_data)
+        serializer = ClassificationSerializer(data=class_data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_200_OK)
@@ -168,8 +240,7 @@ class ClassificationView(APIView):
     def put(self, request):
         try:
             classification = Classification.objects.get(
-                classification_name=request.data.get('forward_name')
-            )
+                classification_name=request.data.get('id'))
         except:
             return Http404
         serializer = ClassificationSerializer(instance=classification, data=request.data)
@@ -185,121 +256,6 @@ class ClassificationView(APIView):
         _class.is_active = not _class.is_active
         _class.save()
         return Response(status=status.HTTP_200_OK)
-
-
-class TagView(APIView):
-    
-    # 获取所有Tag
-    def get(self, request):
-        article_list = Article.objects.all()
-        pagination = MyPagination()
-        result_set = pagination.paginate_queryset(queryset=article_list, request=request)
-        serializer = ArticleSerializer(instance=result_set['data'], many=True)
-        result_set['data'] = serializer.data
-        return Response(data=result_set, status=status.HTTP_200_OK)
-
-    # 创建Tag
-    def post(self, request):
-        serializer = ArticleSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    # 修改Tag
-    def put(self, request):
-        article = get_article_by_title(request.data.get('title'))
-        serializer = ArticleSerializer(instance=article, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    # 禁用、启用Tag
-    def delete(self, request):
-        article = get_article_by_title(request.data.get('title'))
-        article.is_active = not article.is_active
-        article.save()
-        return Response(status=status.HTTP_200_OK)
-    
-    
-# 用户登录
-@api_view(['post'])
-def user_acccout_view(request):
-    if request.method == 'POST':
-        user = get_user_by_username(request.data.get('username'))
-        if user.password == request.data.get('password'):
-            user.last_login = timezone.now()
-            user.save()
-            request.session['user'] = request.data
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-
-# 返回带文章内容的一篇文章
-@api_view(['get'])
-def article_edit_view(request):
-    try:
-        article = Article.objects.get(id=int(request.query_params['articleId']))
-    except:
-        Http404
-    serializer = ArticleSerializer(instance=article)
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
-
-
-# 返回一个用户的信息
-@api_view(['get'])
-def user_message_view(request):
-    try:
-        user = User.objects.get(username=request.query_params['username'])
-    except:
-        Http404
-    serializer = UserSerializer(instance=user)
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
-
-
-# 返回特定用户创作的文章（不带文章内容）
-@api_view(['get'])
-def article_author_view(request):
-    try:
-        user = User.objects.get(username=request.query_params['username'])
-    except:
-        Http404
-    article_list = Article.objects.filter(author=user.id)
-    pagination = MyPagination()
-    result_set = pagination.paginate_queryset(queryset=article_list, request=request)
-    serializer = ArticleExcludeContentSerializer(instance=result_set['data'], many=True)
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
-
-
-# 返回特定分类下的文章（不带文章内容）
-@api_view(['get'])
-def article_class_view(request):
-    try:
-        classification = Classification.objects.get(
-            classification_name=request.query_params['className'],
-        )
-    except:
-        Http404
-    article_list = Article.objects.filter(classification=classification.id)
-    pagination = MyPagination()
-    result_set = pagination.paginate_queryset(queryset=article_list, request=request)
-    serializer = ArticleExcludeContentSerializer(instance=result_set['data'], many=True)
-    result_set['data'] = serializer.data
-    return Response(data=result_set, status=status.HTTP_200_OK)
-
-
-# 获取session中存储的user的信息，即已登录用户自身的信息
-@api_view(['get'])
-def user_self_view(request):
-    print(request.session.get('user'))
-    uesr: User = request.session.get('user')
-    try:
-        user = User.objects.get(username=uesr.username)
-    except:
-        Http404
-    serializer = UserSerializer(instance=user)
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 # 返回最多文章的6个分类
@@ -327,7 +283,8 @@ def class_new_view(request):
 @api_view(['get'])
 def class_search_view(request):
     if (request.query_params.get('className')):
-        class_list = Classification.objects.filter(classification_name__icontains=request.query_params.get('className'))
+        class_list = Classification.objects.filter(
+            classification_name__icontains=request.query_params.get('className'))
     else:
         class_list = Classification.objects.all().order_by('-id')
     pagination = MyPagination()
@@ -335,3 +292,48 @@ def class_search_view(request):
     serializer = ClassificationSerializer(instance=result_set['data'], many=True)
     result_set['data'] = serializer.data
     return Response(data=result_set, status=status.HTTP_200_OK)
+
+
+class TagView(APIView):
+    # 用分页器获取所有Tag
+    def get(self, request):
+        if (request.data.get('id')):
+            tag_list = Tag.objects.get(id=request.data.get('id'))
+        elif (request.data.get('tagName')):
+            tag_list = Tag.objects.filter(
+                tag_name__icontains=request.query_params.get('tagName'))
+        tag_list = Tag.objects.all()
+        pagination = MyPagination()
+        result_set = pagination.paginate_queryset(queryset=tag_list, request=request)
+        serializer = TagSerializer(instance=result_set['data'], many=True)
+        result_set['data'] = serializer.data
+        return Response(data=result_set, status=status.HTTP_200_OK)
+
+    # 创建Tag
+    def post(self, request):
+        serializer = TagSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    # 修改Tag
+    def put(self, request):
+        tag = Tag.objects.get(id=request.data.get('id'))
+        tag.tag_name = request.data.get('tagName')
+        serializer = TagSerializer(instance=tag, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    # 禁用、启用Tag
+    def delete(self, request):
+        tag = Tag.objects.get(id=request.data.get('id'))
+        tag.is_active = not tag.is_active
+        serializer = TagSerializer(data=tag)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    

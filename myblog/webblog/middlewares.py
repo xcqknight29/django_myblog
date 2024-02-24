@@ -14,10 +14,13 @@ class LoginMiddleware:
         self.allow_urls = ['/writer/login']
 
     def __call__(self, request):
+        
         # before
         if request.path in self.allow_urls:
+            print('this url is allowed to be visited')
             pass
         elif request.session.get('user'):
+            print('user is already logged in')
             pass
         elif request.method == 'OPTIONS':
             pass
@@ -50,7 +53,7 @@ class CopeMiddleware:
             return HttpResponse(content='Forbidden', status=403)
         if (request.path in self.writer_urls) and (user_comp == 0):
             return HttpResponse(content='Forbidden', status=403)
-        response = self.get_response
+        response = self.get_response(request)
         # after
         return response
 
